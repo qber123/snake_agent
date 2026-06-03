@@ -3,19 +3,19 @@ from collections import deque
 import pygame
 
 class Snake:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.field = np.zeros((width, height))
+    def __init__(self):
+        self.width = 30
+        self.height = 30
+        self.field = np.zeros((self.width, self.height))
         
-        self.x_apple = np.random.randint(0, width)
-        self.y_apple = np.random.randint(0, height)
+        self.x_apple = np.random.randint(0, self.width)
+        self.y_apple = np.random.randint(0, self.height)
         self.field[self.x_apple][self.y_apple] = 3
 
         self.snake = deque([
-            (width // 2, height // 2),
-            (width // 2, height // 2 + 1),
-            (width // 2, height // 2 + 2)
+            (self.width // 2, self.height // 2),
+            (self.width // 2, self.height // 2 + 1),
+            (self.width // 2, self.height // 2 + 2)
         ])
         
         for i, (x, y) in enumerate(self.snake):
@@ -52,7 +52,7 @@ class Snake:
         return reward
 
     def reset(self):
-        self.__init__(self.width, self.height)
+        self.__init__()
         return self.field
 
     def update(self, action):

@@ -2,7 +2,7 @@ import pygame
 import sys
 from snake import Snake
 
-game = Snake(30, 30)
+game = Snake()
 
 pygame.init()
 
