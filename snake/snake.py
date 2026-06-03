@@ -45,9 +45,10 @@ class Snake:
         old_distance = self.count_distance(old_pos)
         new_distance = self.count_distance(new_pos)
 
-        if(new_distance < old_distance): reward += 50
-        if(self.is_food): reward += 200
-        if(self.is_game_over): reward += -10000
+        if(self.is_food): reward += 10
+        if(self.is_game_over): reward += -10
+
+        reward += 0.1 * (old_distance - new_distance)
 
         return reward
 
@@ -76,7 +77,7 @@ class Snake:
 
         if new_pos in self.snake or new_pos[0] >= self.width or new_pos[0] < 0 or new_pos[1] >= self.height or new_pos[1] < 0:
             self.is_game_over = True
-            return self.field, -10000, True
+            return self.field, -10, True
 
         if (new_pos) != (self.x_apple, self.y_apple):
             self.snake.pop()
