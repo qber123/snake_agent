@@ -6,10 +6,10 @@ class Snake:
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.field = np.zeros((width, height), dtype=np.uint8)
+        self.field = np.zeros((width, height))
         
-        self.x_apple = np.random.randint(0, width, dtype=np.uint8)
-        self.y_apple = np.random.randint(0, height, dtype=np.uint8)
+        self.x_apple = np.random.randint(0, width)
+        self.y_apple = np.random.randint(0, height)
         self.field[self.x_apple][self.y_apple] = 3
 
         self.snake = deque([
@@ -23,16 +23,21 @@ class Snake:
 
         self.is_game_over = False
         self.is_food = False
+        self.direction = (0, -1)
 
     def spawn_apple(self):
-        self.x_apple = np.random.randint(0, self.width, dtype=np.uint8)
-        self.y_apple = np.random.randint(0, self.height, dtype=np.uint8)
-        if (self.x_apple, self.y_apple) in self.snake:
-            self.spawn_apple()
+        while True:
+            x = np.random.randint(0, self.width)
+            y = np.random.randint(0, self.height)
+
+            if (x, y) not in self.snake:
+                self.x_apple = x
+                self.y_apple = y
+                break
 
     def count_distance(self, snake_pos):
-        distance_vector = (self.x_apple, self.y_apple) - snake_pos
-        distance = np.sqrt(distance_vector[0] + distance_vector[1], dtype=np.uint8)
+        distance_vector = np.array([self.x_apple, self.y_apple]) - np.array(snake_pos)
+        distance = np.linalg.norm(distance_vector)
         return distance
 
     def count_reward(self, old_pos, new_pos):
@@ -46,18 +51,32 @@ class Snake:
 
         return reward
 
-    def update(self, action):
-        snake_dir = (0, 0)
-        match action:
-            case 0: snake_dir = (-1, 0) # left
-            case 1: snake_dir = (0, -1) # down
-            case 2: snake_dir = (1, 0) # right
-            case 3: snake_dir = (0, 1) # up
+    def reset(self):
+        self.__init__(self.width, self.height)
+        return self.field
 
-        new_pos = (self.snake[0][0] + snake_dir[0], self.snake[0][1] + snake_dir[1])
+    def update(self, action):
+        if self.is_game_over:
+            return self.field, 0, True
+        
+        match action:
+            case 0: snake_dir = (-1, 0) 
+            case 1: snake_dir = (0, -1) 
+            case 2: snake_dir = (1, 0) 
+            case 3: snake_dir = (0, 1)
+            case _: snake_dir = self.direction 
+        
+        if(self.direction[0] + snake_dir[0] == 0 and self.direction[1] + snake_dir[1] == 0):
+            snake_dir = self.direction
+
+        self.direction = snake_dir
+
+        old_pos = self.snake[0]
+        new_pos = (old_pos[0] + self.direction[0], old_pos[1] + self.direction[1])
 
         if new_pos in self.snake or new_pos[0] >= self.width or new_pos[0] < 0 or new_pos[1] >= self.height or new_pos[1] < 0:
             self.is_game_over = True
+            return self.field, -10000, True
 
         if (new_pos) != (self.x_apple, self.y_apple):
             self.snake.pop()
@@ -67,7 +86,7 @@ class Snake:
             
         self.snake.appendleft(new_pos)
 
-        self.field = np.zeros((self.width, self.height), dtype=np.uint8)
+        self.field = np.zeros((self.width, self.height))
 
         for i, (x, y) in enumerate(self.snake):
             self.field[x, y] = 1 if i == 0 else 2
@@ -77,6 +96,12 @@ class Snake:
             self.is_food = False
 
         self.field[self.x_apple][self.y_apple] = 3
+        
+        observation = self.field
+        reward = self.count_reward(old_pos, new_pos)
+        done = self.is_game_over
+        
+        return observation, reward, done
 
     def draw(self, screen, cell_size):
         for x in range(self.width):
@@ -95,7 +120,7 @@ class Snake:
                 pygame.draw.rect(
                     screen,
                     color,
-                    (x * cell_size, y * cell_size, cell_size, cell_size)
+                    (x * cell_size, y * cell_size, cell_size, cell_size),
                 )
 
         

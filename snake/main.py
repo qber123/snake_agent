@@ -2,11 +2,11 @@ import pygame
 import sys
 from snake import Snake
 
-game = Snake(40, 40)
+game = Snake(30, 30)
 
 pygame.init()
 
-screen = pygame.display.set_mode((1200, 800))
+screen = pygame.display.set_mode((600, 600))
 
 clock = pygame.time.Clock()
 
@@ -21,19 +21,19 @@ while True:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 action = 0
-                game.update(action)
             elif event.key == pygame.K_UP:
                 action = 1
-                game.update(action)
             elif event.key == pygame.K_RIGHT:
                 action = 2
-                game.update(action)
             elif event.key == pygame.K_DOWN:
                 action = 3
-                game.update(action)
+                
+    obs, reward, done = game.update(action)
+
+    if(done): game.reset()
 
     screen.fill((0, 0, 0))  
-    game.draw(screen, 10)    
+    game.draw(screen, 20)    
 
     pygame.display.flip()    
     clock.tick(10)           
