@@ -1,5 +1,6 @@
 import numpy as np
 from collections import deque
+import pygame
 
 class Snake:
     def __init__(self, width, height):
@@ -17,13 +18,8 @@ class Snake:
             (width // 2, height // 2 + 2)
         ])
         
-        first = True
-        for (x, y) in self.snake:
-            if first:
-                self.field[x][y] = 1
-                first = False
-            else:
-                self.field[x][y] = 2
+        for i, (x, y) in enumerate(self.snake):
+            self.field[x, y] = 1 if i == 0 else 2
 
         self.is_game_over = False
         self.is_food = False
@@ -51,37 +47,56 @@ class Snake:
         return reward
 
     def update(self, action):
-        snake_dir = ()
+        snake_dir = (0, 0)
         match action:
             case 0: snake_dir = (-1, 0) # left
-            case 1: snake_dir = (0, 1) # up
+            case 1: snake_dir = (0, -1) # down
             case 2: snake_dir = (1, 0) # right
-            case 3: snake_dir = (0, -1) # down
+            case 3: snake_dir = (0, 1) # up
 
-        new_pos = self.snake[0] + snake_dir
+        new_pos = (self.snake[0][0] + snake_dir[0], self.snake[0][1] + snake_dir[1])
 
-        if new_pos in self.snake or new_pos[0] > self.width or new_pos[0] < 0 or new_pos[1] > self.height or new_pos[1] < 0:
+        if new_pos in self.snake or new_pos[0] >= self.width or new_pos[0] < 0 or new_pos[1] >= self.height or new_pos[1] < 0:
             self.is_game_over = True
 
-        elif (self.snake[0] + snake_dir) != (self.x_apple, self.y_apple):
-            self.is_food = True
+        if (new_pos) != (self.x_apple, self.y_apple):
             self.snake.pop()
+        
+        if (new_pos) == (self.x_apple, self.y_apple):
+            self.is_food = True
             
         self.snake.appendleft(new_pos)
 
-        first = True
-        for (x, y) in self.snake:
-            if first:
-                self.field[x][y] = 1
-                first = False
-            else:
-                self.field[x][y] = 2
+        self.field = np.zeros((self.width, self.height), dtype=np.uint8)
+
+        for i, (x, y) in enumerate(self.snake):
+            self.field[x, y] = 1 if i == 0 else 2
 
         if self.is_food:
             self.spawn_apple()
             self.is_food = False
 
         self.field[self.x_apple][self.y_apple] = 3
+
+    def draw(self, screen, cell_size):
+        for x in range(self.width):
+            for y in range(self.height):
+                value = self.field[x, y]
+
+                if value == 0:
+                    color = (0, 0, 0)
+                elif value == 1:
+                    color = (0, 255, 0)
+                elif value == 2:
+                    color = (0, 180, 0)
+                elif value == 3:
+                    color = (255, 0, 0)
+
+                pygame.draw.rect(
+                    screen,
+                    color,
+                    (x * cell_size, y * cell_size, cell_size, cell_size)
+                )
 
         
     
