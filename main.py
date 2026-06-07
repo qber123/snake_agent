@@ -19,23 +19,33 @@ model_path = f"{base_dir}/models/snake-agent.pth"
 class SnakeAgent(nn.Module):
     def __init__(self, n_input, n_hid, n_out):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(n_input, n_hid),
+        self.conv = nn.Sequential(
+            nn.Conv2d(3, 32, 5, padding=1),
             nn.ReLU(),
-            nn.Linear(n_hid, n_hid),
+            nn.Conv2d(32, 32, 5, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 5, padding=1),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d((1,1)),
+            nn.Flatten()
+        )
+        self.net = nn.Sequential(
+            nn.Linear(64, n_hid),
             nn.ReLU(),
             nn.Linear(n_hid, n_out)
         )
 
-    def forward(self, state):
-        return self.net(state)
+    def forward(self, x):
+        x = self.conv(x)
+        return self.net(x)
     
+
 def choose_action(model, obs, epsilon=0.0):
     if np.random.rand() < epsilon:
         return np.random.randint(0, 4)
     
-    obs = torch.tensor(obs, dtype=torch.float32, device="cpu").unsqueeze(0)
+    obs = torch.tensor(obs, dtype=torch.float32, device="cpu")
+    obs = obs.unsqueeze(0)
     with torch.no_grad():
         out = model(obs)
     return int(torch.argmax(out).item())

@@ -8,8 +8,8 @@ class Snake:
         self.height = 30
         self.field = np.zeros((self.width, self.height))
         
-        self.x_apple = np.random.randint(0, self.width)
-        self.y_apple = np.random.randint(0, self.height)
+        self.x_apple = self.width // 2
+        self.y_apple = self.height // 2 - 2
         self.field[self.x_apple][self.y_apple] = 3
 
         self.snake = deque([
@@ -36,29 +36,46 @@ class Snake:
                 break
 
     def count_distance(self, snake_pos):
-        distance_vector = np.array([self.x_apple, self.y_apple]) - np.array(snake_pos)
-        distance = np.linalg.norm(distance_vector)
-        return distance
+        # distance_vector = np.array([self.x_apple, self.y_apple]) - np.array(snake_pos)
+        # distance = np.linalg.norm(distance_vector)
+        snake_pos = np.array(snake_pos)
+        distance_manhatten = np.abs((self.x_apple - snake_pos[0])) + np.abs((self.y_apple - snake_pos[1])) 
+        return distance_manhatten
 
     def count_reward(self, old_pos, new_pos):
         reward = 0
         old_distance = self.count_distance(old_pos)
         new_distance = self.count_distance(new_pos)
 
-        if(self.is_food): reward += 10
-        if(self.is_game_over): reward += -10
+        if(self.is_food): reward += 1
+        if(self.is_game_over): reward += -1
 
-        reward += 0.1 * (old_distance - new_distance)
+        reward += 0.001 * (old_distance - new_distance)
 
         return reward
 
+    def form_obs(self):
+        hx, hy = self.snake[0]
+        observation = np.zeros((7, 30, 30), dtype=np.float32)
+        observation[0][self.snake] = 1
+        observation[1][hx, hy] = 1
+        observation[2][self.x_apple, self.y_apple] = 1
+        match self.direction:
+            case (-1, 0): observation[3] = 1
+            case (0, -1): observation[4] = 1
+            case (1, 0): observation[5] = 2
+            case (0, 1): observation[6] = 3    
+        return observation
+
     def reset(self):
         self.__init__()
-        return self.field
+        observation = self.form_obs()
+        return observation
 
     def update(self, action):
         if self.is_game_over:
-            return self.field, 0, True
+            observation = self.form_obs()
+            return observation, 0, True
         
         match action:
             case 0: snake_dir = (-1, 0) 
@@ -77,7 +94,8 @@ class Snake:
 
         if new_pos in self.snake or new_pos[0] >= self.width or new_pos[0] < 0 or new_pos[1] >= self.height or new_pos[1] < 0:
             self.is_game_over = True
-            return self.field, -10, True
+            observation = self.form_obs()
+            return observation, -1, True
 
         if (new_pos) != (self.x_apple, self.y_apple):
             self.snake.pop()
@@ -98,7 +116,7 @@ class Snake:
 
         self.field[self.x_apple][self.y_apple] = 3
         
-        observation = self.field
+        observation = self.form_obs()
         reward = self.count_reward(old_pos, new_pos)
         done = self.is_game_over
         

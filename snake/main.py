@@ -5,7 +5,6 @@ from snake import Snake
 game = Snake()
 
 pygame.init()
-
 screen = pygame.display.set_mode((600, 600))
 
 clock = pygame.time.Clock()
