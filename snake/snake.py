@@ -47,24 +47,74 @@ class Snake:
         old_distance = self.count_distance(old_pos)
         new_distance = self.count_distance(new_pos)
 
-        if(self.is_food): reward += 1
-        if(self.is_game_over): reward += -1
+        if(self.is_food): reward += 10
+        if(self.is_game_over): reward += -10
 
-        reward += 0.001 * (old_distance - new_distance)
+        reward += 0.1 * (old_distance - new_distance)
 
         return reward
 
+    def is_collision(self, pos):
+        x, y = pos
+
+        return (
+            x < 0 or
+            x >= self.width or
+            y < 0 or
+            y >= self.height or
+            pos in self.snake
+        )
+
     def form_obs(self):
         hx, hy = self.snake[0]
-        observation = np.zeros((7, 30, 30), dtype=np.float32)
-        observation[0][self.snake] = 1
-        observation[1][hx, hy] = 1
-        observation[2][self.x_apple, self.y_apple] = 1
-        match self.direction:
-            case (-1, 0): observation[3] = 1
-            case (0, -1): observation[4] = 1
-            case (1, 0): observation[5] = 2
-            case (0, 1): observation[6] = 3    
+        ax, ay = self.x_apple, self.y_apple
+        dx, dy = self.direction
+        observation = np.zeros(13, dtype=np.float32)
+        
+        # direction information
+        match (dx, dy):
+            case (-1, 0): observation[0] = 1
+            case (0, -1): observation[1] = 1
+            case (1, 0): observation[2] = 1
+            case (0, 1): observation[3] = 1 
+               
+        # food relative pos
+        if ax > hx: observation[4] = 1 # right
+        else: observation[5] = 1 # left
+        if ay > hy: observation[6] = 1 # up
+        else: observation[7] = 1 # down
+        
+        # distance to apple
+        observation[8] = (ax - hx) / self.width # dx
+        observation[9] = (ay - hy) / self.height # dy
+        
+        left_dir = (dy, -dx)
+        right_dir = (-dy, dx)
+        
+        front_pos = (
+            hx + dx,
+            hy + dy
+        )
+
+        left_pos = (
+            hx + left_dir[0],
+            hy + left_dir[1]
+        )
+
+        right_pos = (
+            hx + right_dir[0],
+            hy + right_dir[1]
+        )
+        
+        danger_front = int(self.is_collision(front_pos))
+        danger_left = int(self.is_collision(left_pos))
+        danger_right = int(self.is_collision(right_pos))
+        
+        # dangers
+        observation[10] = danger_front
+        observation[11] = danger_left
+        observation[12] = danger_right
+        
         return observation
 
     def reset(self):

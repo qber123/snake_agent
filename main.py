@@ -19,25 +19,15 @@ model_path = f"{base_dir}/models/snake-agent.pth"
 class SnakeAgent(nn.Module):
     def __init__(self, n_input, n_hid, n_out):
         super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(3, 32, 5, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 32, 5, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, 5, padding=1),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1,1)),
-            nn.Flatten()
-        )
         self.net = nn.Sequential(
-            nn.Linear(64, n_hid),
+            nn.Linear(n_input, n_hid),
+            nn.ReLU(),            
+            nn.Linear(n_hid, n_hid),
             nn.ReLU(),
             nn.Linear(n_hid, n_out)
         )
-
-    def forward(self, x):
-        x = self.conv(x)
-        return self.net(x)
+    def forward(self, state):
+        return self.net(state)
     
 
 def choose_action(model, obs, epsilon=0.0):
@@ -50,7 +40,7 @@ def choose_action(model, obs, epsilon=0.0):
         out = model(obs)
     return int(torch.argmax(out).item())
 
-agent = SnakeAgent(n_input=900, n_hid=128, n_out=4)
+agent = SnakeAgent(n_input=13, n_hid=128, n_out=4)
 agent.load_state_dict(torch.load(model_path))
 
 obs = game.reset()
