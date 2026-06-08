@@ -3,7 +3,8 @@ from collections import deque
 import pygame
 
 class Snake:
-    def __init__(self):
+    def __init__(self, is_cnn = False):
+        self.is_cnn = is_cnn
         self.width = 30
         self.height = 30
         self.field = np.zeros((self.width, self.height))
@@ -66,6 +67,19 @@ class Snake:
         )
 
     def form_obs(self):
+        if self.is_cnn:
+            hx, hy = self.snake[0]
+            observation = np.zeros((7, 30, 30), dtype=np.float32)
+            observation[0][self.snake] = 1
+            observation[1][hx, hy] = 1
+            observation[2][self.x_apple, self.y_apple] = 1
+            match self.direction:
+                case (-1, 0): observation[3] = 1
+                case (0, -1): observation[4] = 1
+                case (1, 0): observation[5] = 2
+                case (0, 1): observation[6] = 3    
+            return observation
+        
         hx, hy = self.snake[0]
         ax, ay = self.x_apple, self.y_apple
         dx, dy = self.direction
