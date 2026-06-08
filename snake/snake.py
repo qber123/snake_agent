@@ -160,6 +160,8 @@ class Snake:
         for i, (x, y) in enumerate(self.snake):
             self.field[x, y] = 1 if i == 0 else 2
 
+        reward = self.count_reward(old_pos, new_pos)
+
         if self.is_food:
             self.spawn_apple()
             self.is_food = False
@@ -167,7 +169,6 @@ class Snake:
         self.field[self.x_apple][self.y_apple] = 3
         
         observation = self.form_obs()
-        reward = self.count_reward(old_pos, new_pos)
         done = self.is_game_over
         
         return observation, reward, done

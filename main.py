@@ -45,6 +45,9 @@ agent.load_state_dict(torch.load(model_path))
 
 obs = game.reset()
 
+total_reward = 0
+max_reward = 0
+
 while True:
     action = choose_action(agent, obs)
 
@@ -55,7 +58,16 @@ while True:
                 
     obs, reward, done = game.update(action)
 
-    if(done): game.reset()
+    total_reward += reward
+
+    print(f"reward: {total_reward}")
+
+    if(done):
+        print(f"finished with: {total_reward}")
+        max_reward = max(total_reward, max_reward)
+        total_reward = 0
+        game.reset()
+        
 
     screen.fill((0, 0, 0))  
     game.draw(screen, 20)    
