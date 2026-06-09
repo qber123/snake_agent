@@ -51,7 +51,7 @@ class Snake:
         if(self.is_food): reward += 10
         if(self.is_game_over): reward += -10
 
-        reward += 0.1 * (old_distance - new_distance)
+        reward += 0.01 * (old_distance - new_distance)
 
         return reward
 
@@ -76,8 +76,8 @@ class Snake:
             match self.direction:
                 case (-1, 0): observation[3] = 1
                 case (0, -1): observation[4] = 1
-                case (1, 0): observation[5] = 2
-                case (0, 1): observation[6] = 3    
+                case (1, 0): observation[5] = 1
+                case (0, 1): observation[6] = 1    
             return observation
         
         hx, hy = self.snake[0]
@@ -132,7 +132,7 @@ class Snake:
         return observation
 
     def reset(self):
-        self.__init__()
+        self.__init__(is_cnn=self.is_cnn)
         observation = self.form_obs()
         return observation
 
