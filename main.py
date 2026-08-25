@@ -14,7 +14,7 @@ screen = pygame.display.set_mode((600, 600))
 clock = pygame.time.Clock()
 
 base_dir = os.getcwd()
-model_path = f"{base_dir}/models/v3/snake-agent.pth"
+model_path = f"{base_dir}/models/v1/snake-agent.pth"
 
 class SnakeAgent(nn.Module):
     def __init__(self, n_input, n_hid, n_out):

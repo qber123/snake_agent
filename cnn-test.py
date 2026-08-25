@@ -39,7 +39,6 @@ class SnakeAgent(nn.Module):
             nn.ReLU(),
             nn.Linear(256, n_out)
         )
-
     def forward(self, x):
         x = self.conv(x)
         return self.head(x)

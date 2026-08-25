@@ -1,13 +1,21 @@
+import gymnasium as gym
 import numpy as np
 from collections import deque
 import pygame
 
-class Snake:
-    def __init__(self, is_cnn = False):
-        self.is_cnn = is_cnn
+
+class Snake(gym.Env):
+    def __init__(self, render_mode: str = None, truncation_steps: int = None):
+        super().__init__()
+        
+        if render_mode == "human":
+            pygame.init()
+            self.screen = pygame.display.set_mode((600, 600))
+            self.clock = pygame.time.Clock()
+        
         self.width = 30
         self.height = 30
-        self.field = np.zeros((self.width, self.height))
+        self.field = np.zeros((self.width, self.height), dtype=np.float32)
         
         self.x_apple = self.width // 2
         self.y_apple = self.height // 2 - 2
@@ -25,7 +33,19 @@ class Snake:
         self.is_game_over = False
         self.is_food = False
         self.direction = (0, -1)
-
+        
+        self.observation_space = gym.spaces.Box(
+            low=0.0,
+            high=3.0,
+            shape=(30, 30),
+            dtype=np.float32
+        )
+        self.action_space = gym.spaces.Discrete(4)
+        self.render_mode = render_mode
+        self.max_steps = truncation_steps
+        self.steps = 0
+        self.reward = 0
+        
     def spawn_apple(self):
         while True:
             x = np.random.randint(0, self.width)
@@ -37,22 +57,20 @@ class Snake:
                 break
 
     def count_distance(self, snake_pos):
-        # distance_vector = np.array([self.x_apple, self.y_apple]) - np.array(snake_pos)
-        # distance = np.linalg.norm(distance_vector)
         snake_pos = np.array(snake_pos)
         distance_manhatten = np.abs((self.x_apple - snake_pos[0])) + np.abs((self.y_apple - snake_pos[1])) 
         return distance_manhatten
 
     def count_reward(self, old_pos, new_pos):
         reward = 0
-        old_distance = self.count_distance(old_pos)
-        new_distance = self.count_distance(new_pos)
+        # old_distance = self.count_distance(old_pos)
+        # new_distance = self.count_distance(new_pos)
 
-        if(self.is_food): reward += 10
-        if(self.is_game_over): reward += -10
+        if(self.is_food): reward += 1
 
-        reward += 0.1 * (old_distance - new_distance)
+        # reward += 0.1 * (old_distance - new_distance)
 
+        self.reward += reward
         return reward
 
     def is_collision(self, pos):
@@ -67,79 +85,61 @@ class Snake:
         )
 
     def form_obs(self):
-        if self.is_cnn:
-            hx, hy = self.snake[0]
-            observation = np.zeros((7, 30, 30), dtype=np.float32)
-            observation[0][self.snake] = 1
-            observation[1][hx, hy] = 1
-            observation[2][self.x_apple, self.y_apple] = 1
-            match self.direction:
-                case (-1, 0): observation[3] = 1
-                case (0, -1): observation[4] = 1
-                case (1, 0): observation[5] = 1
-                case (0, 1): observation[6] = 1    
-            return observation
-        
+        observation = np.zeros((30, 30), dtype=np.float32)
+
         hx, hy = self.snake[0]
-        ax, ay = self.x_apple, self.y_apple
-        dx, dy = self.direction
-        observation = np.zeros(13, dtype=np.float32)
-        
-        # direction information
-        match (dx, dy):
-            case (-1, 0): observation[0] = 1
-            case (0, -1): observation[1] = 1
-            case (1, 0): observation[2] = 1
-            case (0, 1): observation[3] = 1 
-               
-        # food relative pos
-        if ax > hx: observation[4] = 1 # right
-        else: observation[5] = 1 # left
-        if ay > hy: observation[6] = 1 # up
-        else: observation[7] = 1 # down
-        
-        # distance to apple
-        observation[8] = (ax - hx) / self.width # dx
-        observation[9] = (ay - hy) / self.height # dy
-        
-        left_dir = (dy, -dx)
-        right_dir = (-dy, dx)
-        
-        front_pos = (
-            hx + dx,
-            hy + dy
-        )
 
-        left_pos = (
-            hx + left_dir[0],
-            hy + left_dir[1]
-        )
+        for x, y in self.snake:
+            observation[x, y] = 1
 
-        right_pos = (
-            hx + right_dir[0],
-            hy + right_dir[1]
-        )
-        
-        danger_front = int(self.is_collision(front_pos))
-        danger_left = int(self.is_collision(left_pos))
-        danger_right = int(self.is_collision(right_pos))
-        
-        # dangers
-        observation[10] = danger_front
-        observation[11] = danger_left
-        observation[12] = danger_right
-        
+        observation[hx, hy] = 2
+        observation[self.x_apple, self.y_apple] = 3
         return observation
+    
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
 
-    def reset(self):
-        self.__init__(is_cnn=self.is_cnn)
+        self.field = np.zeros((self.width, self.height), dtype=np.float32)
+                
+        self.x_apple = self.width // 2
+        self.y_apple = self.height // 2 - 2
+        self.field[self.x_apple][self.y_apple] = 3
+
+        self.snake = deque([
+            (self.width // 2, self.height // 2),
+            (self.width // 2, self.height // 2 + 1),
+            (self.width // 2, self.height // 2 + 2)
+        ])
+        
+        for i, (x, y) in enumerate(self.snake):
+            self.field[x, y] = 1 if i == 0 else 2
+
+        self.is_game_over = False
+        self.is_food = False
+        self.direction = (0, -1)
+        self.reward = 0
+        self.steps = 0
+
         observation = self.form_obs()
-        return observation
+        info = {}
 
-    def update(self, action):
+        return observation, info
+
+    def step(self, action):
+        info = {}
+        
+        self.steps += 1
+
+        truncated = (
+            self.max_steps is not None
+            and self.steps >= self.max_steps
+            and not self.is_game_over
+        )
+        
+        
         if self.is_game_over:
             observation = self.form_obs()
-            return observation, 0, True
+            return observation, 0, True, truncated, info
         
         match action:
             case 0: snake_dir = (-1, 0) 
@@ -156,10 +156,10 @@ class Snake:
         old_pos = self.snake[0]
         new_pos = (old_pos[0] + self.direction[0], old_pos[1] + self.direction[1])
 
-        if new_pos in self.snake or new_pos[0] >= self.width or new_pos[0] < 0 or new_pos[1] >= self.height or new_pos[1] < 0:
+        if self.is_collision(new_pos):
             self.is_game_over = True
             observation = self.form_obs()
-            return observation, -1, True
+            return observation, 0, True, truncated, info
 
         if (new_pos) != (self.x_apple, self.y_apple):
             self.snake.pop()
@@ -169,7 +169,7 @@ class Snake:
             
         self.snake.appendleft(new_pos)
 
-        self.field = np.zeros((self.width, self.height))
+        self.field = np.zeros((self.width, self.height), dtype=np.float32)
 
         for i, (x, y) in enumerate(self.snake):
             self.field[x, y] = 1 if i == 0 else 2
@@ -185,9 +185,21 @@ class Snake:
         observation = self.form_obs()
         done = self.is_game_over
         
-        return observation, reward, done
-
-    def draw(self, screen, cell_size):
+        if self.render_mode == "human":
+            self.render()
+        
+        return observation, reward, done, truncated, info
+    
+    def close(self):
+        if self.render_mode == "human":
+            pygame.quit()
+    
+    def render(self):
+        if self.render_mode != "human":
+            return        
+        
+        cell_size = 20
+        
         for x in range(self.width):
             for y in range(self.height):
                 value = self.field[x, y]
@@ -202,10 +214,9 @@ class Snake:
                     color = (255, 0, 0)
 
                 pygame.draw.rect(
-                    screen,
+                    self.screen,
                     color,
                     (x * cell_size, y * cell_size, cell_size, cell_size),
                 )
-
-        
-    
+        pygame.display.flip() 
+        self.clock.tick(40)
