@@ -7,7 +7,7 @@ import os
 
 stack_size = 4
 
-model_path = f"{os.getcwd()}/models/ppo/agent-v9.pth"
+model_path = f"{os.getcwd()}/models/ppo_cnn/agent-v12.pth"
 
 env = Snake(render_mode="human")
 env = FrameStackObservation(env, stack_size=stack_size)
@@ -47,7 +47,7 @@ class Agent(nn.Module):
         
         action = torch.argmax(logits, dim=1)
         
-        return action
+        return action.item()
 
     def get_action_and_value(self, x, action=None):
         hidden = self.network(x)

@@ -1,5 +1,6 @@
 */__pycache__
 .vscode
 *.pth
-runs/
+runs_cnn/
+runs_vit/
 data/

@@ -193,10 +193,16 @@ class Snake(gym.Env):
     def close(self):
         if self.render_mode == "human":
             pygame.quit()
+            self.is_game_over = True
     
     def render(self):
-        if self.render_mode != "human":
+        if self.render_mode != "human" or self.is_game_over:
             return        
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.close()
+                return
         
         cell_size = 20
         
@@ -218,5 +224,5 @@ class Snake(gym.Env):
                     color,
                     (x * cell_size, y * cell_size, cell_size, cell_size),
                 )
-        pygame.display.flip() 
+        pygame.display.flip()
         self.clock.tick(40)
