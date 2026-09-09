@@ -11,4 +11,6 @@ pip install -r requirements.txt
 
 ## Demo
 
-![Snake AI](assets/snake-agent.gif)
+<p align="center">
+  <img src="assets/snake-agent.gif" alt="Snake AI">
+</p>
