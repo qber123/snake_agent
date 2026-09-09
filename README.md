@@ -9,7 +9,7 @@ In this project we experimented with training AI for the simple snake game. We t
 pip install -r requirements.txt
 ```
 
-## Demo
+## Demo(PPO + CNN best model)
 
 <p align="center">
   <img src="assets/snake-agent.gif" alt="Snake AI">
