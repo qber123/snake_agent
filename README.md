@@ -8,3 +8,7 @@ In this project we experimented with training AI for the simple snake game. We t
 ``` bash
 pip install -r requirements.txt
 ```
+
+## Demo
+
+![Snake AI](assets/snake-agent.gif)
