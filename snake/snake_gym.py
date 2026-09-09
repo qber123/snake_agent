@@ -5,13 +5,10 @@ import pygame
 
 
 class Snake(gym.Env):
-    def __init__(self, render_mode: str = None, truncation_steps: int = None):
+    def __init__(self, render_mode: str = None, truncation_steps: int = None, cell_size = 20):
         super().__init__()
-        
-        if render_mode == "human":
-            pygame.init()
-            self.screen = pygame.display.set_mode((600, 600))
-            self.clock = pygame.time.Clock()
+
+        self.cell_size = cell_size
         
         self.width = 30
         self.height = 30
@@ -45,6 +42,21 @@ class Snake(gym.Env):
         self.max_steps = truncation_steps
         self.steps = 0
         self.reward = 0
+        
+        if self.render_mode in ("human", "rgb_array"):
+            pygame.init()
+        
+        if render_mode == "human":
+            pygame.display.init()
+            self.screen = pygame.display.set_mode(
+                (self.width * self.cell_size, self.height * self.cell_size)
+            )
+            self.clock = pygame.time.Clock()
+            
+        elif render_mode == "rgb_array":
+            self.screen = pygame.Surface(
+                (self.width * self.cell_size, self.height * self.cell_size)
+            )
         
     def spawn_apple(self):
         while True:
@@ -191,21 +203,9 @@ class Snake(gym.Env):
         return observation, reward, done, truncated, info
     
     def close(self):
-        if self.render_mode == "human":
-            pygame.quit()
-            self.is_game_over = True
+        pygame.quit()
     
-    def render(self):
-        if self.render_mode != "human" or self.is_game_over:
-            return        
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.close()
-                return
-        
-        cell_size = 20
-        
+    def render(self):      
         for x in range(self.width):
             for y in range(self.height):
                 value = self.field[x, y]
@@ -222,7 +222,16 @@ class Snake(gym.Env):
                 pygame.draw.rect(
                     self.screen,
                     color,
-                    (x * cell_size, y * cell_size, cell_size, cell_size),
+                    (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size),
                 )
-        pygame.display.flip()
-        self.clock.tick(40)
+        
+        if self.render_mode == "human":        
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.close()
+                    return
+            pygame.display.flip()
+            self.clock.tick(40)
+            
+        elif self.render_mode == "rgb_array":
+            return pygame.surfarray.array3d(self.screen).transpose(1, 0, 2)
