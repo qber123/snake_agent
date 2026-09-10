@@ -1,5 +1,5 @@
 from snake.snake_gym import Snake
-from gymnasium.wrappers import FrameStackObservation
+from gymnasium.wrappers import FrameStackObservation, RecordVideo
 import torch
 import torch.nn as nn
 import numpy as np
@@ -8,8 +8,10 @@ import os
 stack_size = 4
 
 model_path = f"{os.getcwd()}/models/ppo_cnn/agent-v12.pth"
-env = Snake(render_mode="human", cell_size=20)
+# env = Snake(render_mode="human", cell_size=10)
+env = Snake(render_mode="rgb_array", cell_size=10)
 env = FrameStackObservation(env, stack_size=stack_size)
+env = RecordVideo(env, video_folder="data/ppo-v12", )
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
@@ -62,24 +64,22 @@ agent = Agent(512, action_size)
 agent.load_state_dict(torch.load(model_path))
 agent.eval()
 
-obs, _ = env.reset()
-total_reward = 0
-done = False
+record_times = 10
 
-while True:
+for i in range(record_times):
+    obs, _ = env.reset()
+    total_reward = 0
+    done = False
+    
+    while not done:
+        obs_tensor = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
         
-    obs_tensor = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
-    
-    with torch.no_grad():
-        action = agent.get_action(obs_tensor)
-    
-    obs, reward, terminated, truncated, info = env.step(action)
+        with torch.no_grad():
+            action = agent.get_action(obs_tensor)
         
-    total_reward += reward
-    
-    done = terminated or truncated
-    
-    if done:
-        obs, _ = env.reset()
-        print(total_reward)
-        total_reward = 0
+        obs, reward, terminated, truncated, info = env.step(action)
+            
+        total_reward += reward
+        
+        done = terminated or truncated
+    print(f"Episode {i + 1}: reward = {total_reward}")

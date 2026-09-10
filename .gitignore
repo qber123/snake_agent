@@ -3,4 +3,5 @@
 *.pth
 runs_cnn/
 runs_vit/
+runs_cnn_transformer/
 data/
